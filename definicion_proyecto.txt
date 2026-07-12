@@ -181,3 +181,13 @@ Con respecto al feriado no trabajado, se agrega la cantidad de dias que nos perm
 Si la colacion dura menos de 35, se deja en 30, si dura menos de 30, se revisa, puede haber error. tal vez sea conveniente subirla 60 minutos 
 
 Se necesitan las horas decimales al exportar ya que es como se trabaja en geovictoria
+
+MARCACIONES DESPUÉS DE MEDIANOCHE
+
+Cuando una marcación de salida ocurre después de las 00:00, GeoVictoria
+la registra en el día calendario siguiente. Esta marcación debe asociarse
+a la jornada anterior del mismo trabajador cuando el día anterior tenga
+la salida faltante.
+
+Inicialmente, el programa debe identificar estos casos como incidencias
+y sugerir la reasignación antes de realizarla automáticamente.
