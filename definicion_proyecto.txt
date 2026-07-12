@@ -1,0 +1,183 @@
+A) Definir el problema actual:
+
+Actualmente el proceso es un tanto tedioso, me toma unas 3-4 horas aproximadamente. Consiste en;
+
+Flujo actual:
+
+1.- Descarga del archivo en formato excel del registro horario de los trabajadores desde la plataforma de geovictoria.
+2.- El archivo me muestra en otros datos (debo eliminar algunas columnas que no son de mi interés):
+-Horario de ingreso y Salida
+-Horario de inicio y termino de colación
+-Nombres y Apellidos
+-Fecha (Resalta los feriados en chile)
+3.-Luego copio y pego la informacion, eliminando las columnas que no necesito y adecúo el formato al mes correspondiente de acuerdo a los dias trabajadles, para nuestro caso de lunes a viernes.
+4.- Hago sumatorias con formulas en google sheet, de: horas diarias, horas semanales y realizo descuentos o cargo de horas extras por delta con 42 horas semanales y ajusto dependiendo si la semana tuvo (-) de 5 días trabajadles.
+5.- Luego se hace sumatoria mensual de horas y sumatoria mensual de horas extras y descuentos, estas sumatorias se hacen por separado, no debo juntar horas extras con descuentos.
+6.- tambien debo ingresar las propinas las cuales se reparten segun monto recaudado en el mes en partes iguales para cada Garzon por el 80% del total y para cada cocinero por el 20% restante.
+7.-
+
+En resumen, debo presentar al ceo los siguientes datos:
+
+Horas extras totales en el mes
+Horas descuentos totales en el mes
+Propinas (si corresponde)
+Ausencias
+Fecha de ausencias
+Adelantos (si aplica)
+Horas totales trabajadas
+Horas ordinarias (Totales - feriado)
+Horas feriado
+Dias de licencia
+Dias totales trabajados
+Dias de vacaciones
+
+Estos van hoja x hoja en excel para cada trabajador
+Además realizo un resumen ejecutivo
+
+Con dashboard y tablas 
+
+B) Objetivo del programa:
+
+Busco automatizar todo ese proceso, que el programa me recibe el archivo y calcule todo automáticamente segun el mes en curso, además que me entregue resúmenes con dashboard y planillas inteligentes
+Todo esto en una interfaz de usuario profesional
+
+A posterior sería bueno, conexión directa con geovictoria y Zenda mediante apis, si es que es posible (coméntame)
+
+C) Entrada y salida
+
+Input: Nombres, apellidos, rut, fechas del mes, hora de ingreso y salida, hora de inicio y termino colación.
+Output: Horas extras totales en el mes
+Horas descuentos totales en el mes
+Propinas (si corresponde)
+Ausencias
+Fecha de ausencias
+Adelantos (si aplica)
+Horas totales trabajadas
+Horas ordinarias (Totales - feriado)
+Horas feriado
+Dias de licencia
+Dias totales trabajados
+Dias de vacaciones
+
+Estos van hoja x hoja en excel para cada trabajador
+Además realizo un resumen ejecutivo
+
+Con dashboard y tablas 
+
+Tambien debe permitirme el ingreso manual de horas, para aquellos trabajadores que están en libro fisico de asistencia 
+Cuando la persona no marca, le registramos generalmente su hora de ingreso o salida segun cronograma determinado semanalmente, se evalúa cada caso.
+
+Ojo, el ingreso manual seguirá siendo parte de: debido a los datos variables que estan insertos en geovictoria.
+
+Procesamiento del programa:
+Importar datos
+↓
+Limpiar y normalizar información
+↓
+Completar o corregir datos manuales
+↓
+Calcular horas diarias
+↓
+Agrupar por semana
+↓
+Comparar con la jornada semanal correspondiente
+↓
+Separar horas extras y horas de descuento
+↓
+Agrupar resultados mensuales
+↓
+Incorporar licencias, vacaciones, ausencias, adelantos y propinas
+↓
+Generar reportes
+
+
+Reglamento del programa:
+
+Todavía necesitamos definir:
+
+Cómo se reducen las 42 horas cuando una semana tiene menos días laborables.
+R: Multiplicamos 8.5 x "cantidad de días" 
+Qué sucede cuando hay un feriado.
+R: Generalmente lo trabajos, si es así se paga un recargo de 50% por tanto, hacemos la separacion entre horas de jornada ordinaria y horas de dia feriado trabajado. Cuando el feriado no se trabaja, se carga como dia trabajado en una jornada normal, ya que de igual forma se deben pagar.
+Si las horas extras se calculan solamente por semana o también por día.
+R: Solo semanalmente.
+Cómo se redondean los minutos.
+R: Lo hago multiplicando la cantidad de tiempo que me arroje la formula *24 lo que me deja un float
+Cómo se calcula la colación.
+R: Todos tienen 1 hora asignada, el tiempo lo arroja geovictoria, si el tiempo es sobre 1 hora se deja tal cual, si el tiempo es < 1 hora pero > de 35 minutos se recalcula a 1 hora
+Qué sucede cuando falta una marcación.
+R: La asignamos manualmente para dar cumplimiento a la carga horaria diaria
+Qué sucede cuando alguien marca más de una vez.
+R: Las marcas se van corriendo entre si, tambien las movemos manualmente
+Cómo se tratan permisos, vacaciones y licencias.
+R: Se manejan de forma manual, ingresandolas
+Qué cargos participan en las propinas.
+R:Garzones (todos), cocineros (2), socios (2)
+Si una persona que trabajó parte del mes recibe la misma proporción de propinas.
+R: No, relleno una planilla en la cual trabajo con 0 y 1
+0 = no trabajado
+1 = trabajado
+
+y en base a eso se calcula si trabaja se considera en la propina del dia, si no, queda fuera de ese dia
+
+REGLA DE JORNADA SEMANAL
+
+Jornada normal: 42 horas.
+
+Si la semana tiene 5 días laborables:
+42
+Si tiene 4 días laborables:
+34
+
+Si tiene 3 días laborables:
+25.5
+
+Si existe un feriado:
+Solo se hace una separacion por dias trabajados en jornada ordinaria y dias trabajados en feriado
+
+Si el trabajador supera la jornada calculada:
+se considera hora extra
+
+Si el trabajador queda por debajo:
+se considera descuento 
+
+
+
+1. Feriado no trabajado:
+¿Cuántas horas se cargan exactamente?
+Generalmente las que hagan falta para completar las 42 horas, por norma general deberían ser 8 u 8.5
+
+
+2. Feriado trabajado:
+¿Sus horas también se consideran al comparar las horas trabajadas contra la jornada semanal? si forman parte tambien, pero se hace una separacion delas horas totales
+
+3. Colación de 35 minutos o menos:
+¿Cómo se trata?
+
+menos de 35 pasa a 30
+menos de 30 pasa a 1 hora o se revisa manualmente, puede haber un error
+
+
+4. Colación sin marcaciones:
+¿Cómo se trata?
+
+Se revisa manualmente, 1 hora por defecto pero con alguna muestra de incidencia para detectarla y revisarla
+
+5. Propinas:
+¿Cómo se reparte el porcentaje entre garzones, cocineros y socios?
+80% garzones
+20% socios y cocina
+6. Semana parcial:
+¿Se aplica siempre 8,5 × días para semanas de 1 a 4 días y 42 horas para semanas de 5 días?
+Si
+
+
+Si el trabajador falta ese día se considera como ausencia y se reduce la jornada semanal, ejemplo
+
+falta 1 día, la jornada semanal para el calculo se reduce a 34 y se considera 1 dia de ausencia, esto es para no hacer duplicidad de descuento 
+
+Con respecto al feriado no trabajado, se agrega la cantidad de dias que nos permita llegar a las 42 horas si tiene + de 42 horas se agrega el minimo que serian 8
+
+Si la colacion dura menos de 35, se deja en 30, si dura menos de 30, se revisa, puede haber error. tal vez sea conveniente subirla 60 minutos 
+
+Se necesitan las horas decimales al exportar ya que es como se trabaja en geovictoria
