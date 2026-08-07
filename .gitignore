@@ -1,3 +1,17 @@
+# Entorno virtual
 .venv/
+
+# Archivos Excel con datos
 datos/*.xlsx
+datos/*.xls
+
+# Archivos Excel generados por el programa
 salida/*.xlsx
+salida/*.xls
+
+# Archivos temporales de Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
