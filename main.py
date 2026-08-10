@@ -289,7 +289,7 @@ resumen_semanal_programado["horas_derecho_semana"] = resumen_semanal_programado[
 resumen_semanal_programado["horas_programadas_computables"] = resumen_semanal_programado["horas_derecho_semana"] + resumen_semanal_programado["horas_programadas_netas"]
 #print(resumen_semanal_programado)
 
-resumen_semanal_programado["diferencia_programacion"] = resumen_semanal_programado["horas_referencia_semanal"] - resumen_semanal_programado["horas_programadas_computables"]
+resumen_semanal_programado["diferencia_programacion"] = resumen_semanal_programado["horas_programadas_computables"] - resumen_semanal_programado["horas_referencia_semanal"]
 print(
     resumen_semanal_programado[[
             "trabajador_id",
