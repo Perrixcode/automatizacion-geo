@@ -150,9 +150,11 @@ hora entrada
 colación programada
 =
 horas netas programadas
+```
 
 Posteriormente las jornadas son agrupadas por trabajador y semana.
 
+```text
 horas diarias
         ↓
 agrupación semanal
@@ -162,28 +164,33 @@ horas programadas
 reglas computables
         ↓
 comparación con referencia semanal
+```
 
 Esto permite detectar automáticamente diferencias en la programación.
 
-🚨 Incidencias
+## 🚨 Incidencias
 
 Una parte importante del proyecto será diferenciar entre:
 
-datos válidos;
-ajustes automáticos;
-situaciones que requieren revisión humana.
+- datos válidos;
+- ajustes automáticos;
+- situaciones que requieren revisión humana.
 
 Estados considerados:
 
+```text
 OK
 AJUSTADO AUTOMÁTICAMENTE
 REQUIERE REVISIÓN
+```
 
 El programa no pretende inventar información cuando una marcación es ambigua.
 
 Cuando no sea posible determinar correctamente lo ocurrido, el caso será enviado a revisión antes de generar el cálculo definitivo.
 
-🗺️ Flujo objetivo
+## 🗺️ Flujo objetivo
+
+```text
 Maestro trabajadores
         +
 Cronograma mensual
@@ -209,72 +216,87 @@ Feriados / ausencias / licencias / vacaciones
 Resumen mensual
         ↓
 Excel preparado para procesamiento en Zenda
+```
 
-🚧 Roadmap
-MVP
- Maestro de trabajadores
- Cronograma mensual
- Validaciones básicas
- Cálculo de horas programadas
- Agrupación semanal
- Validación de programación semanal
- Integración del procesamiento de GeoVictoria
- Cruce entre horas programadas y marcaciones reales
- Motor de incidencias
- Cálculo de horas reales
- Feriados
- Ausencias
- Licencias y vacaciones
- Horas extraordinarias
- Horas de descuento
- Resumen mensual
- Exportación final a Excel
-Futuras mejoras
-Integración mediante API con GeoVictoria.
-Evaluar integración con Zenda.
-Generación automática del cronograma base.
-Dashboard de resultados.
-Interfaz gráfica.
-Pruebas automatizadas.
-Mayor modularización del proyecto.
-🔐 Privacidad
+## 🚧 Roadmap
+
+### MVP
+
+- [x] Maestro de trabajadores
+- [x] Cronograma mensual
+- [x] Validaciones básicas
+- [x] Cálculo de horas programadas
+- [x] Agrupación semanal
+- [x] Validación de programación semanal
+- [ ] Integración del procesamiento de GeoVictoria
+- [ ] Cruce entre horas programadas y marcaciones reales
+- [ ] Motor de incidencias
+- [ ] Cálculo de horas reales
+- [ ] Feriados
+- [ ] Ausencias
+- [ ] Licencias y vacaciones
+- [ ] Horas extraordinarias
+- [ ] Horas de descuento
+- [ ] Resumen mensual
+- [ ] Exportación final a Excel
+
+### Futuras mejoras
+
+- Integración mediante API con GeoVictoria.
+- Evaluar integración con Zenda.
+- Generación automática del cronograma base.
+- Dashboard de resultados.
+- Interfaz gráfica.
+- Pruebas automatizadas.
+- Mayor modularización del proyecto.
+
+## 🔐 Privacidad
 
 El proyecto fue desarrollado utilizando información operacional real.
 
 Por motivos de privacidad:
 
-los archivos Excel reales no forman parte del repositorio;
-los datos personales de trabajadores están excluidos mediante .gitignore;
-los archivos generados por el sistema tampoco se versionan.
+- los archivos Excel reales no forman parte del repositorio;
+- los datos personales de trabajadores están excluidos mediante `.gitignore`;
+- los archivos generados por el sistema tampoco se versionan.
 
 Para una versión pública del proyecto se utilizarán posteriormente datos ficticios de ejemplo.
 
-📦 Instalación
+## 📦 Instalación
 
 Clonar el repositorio:
 
+```bash
 git clone https://github.com/Perrixcode/automatizacion-geo.git
 cd automatizacion-geo
+```
 
 Crear un entorno virtual:
 
+```bash
 python -m venv .venv
+```
 
 Activarlo en macOS/Linux:
 
+```bash
 source .venv/bin/activate
+```
 
 Instalar dependencias:
 
+```bash
 pip install -r requirements.txt
-📌 Estado del proyecto
+```
+
+## 📌 Estado del proyecto
 
 El proyecto se encuentra actualmente en desarrollo activo.
 
 La prioridad actual es completar el motor de cálculo y validación utilizando archivos Excel. Una vez alcanzado el MVP, se evaluará reemplazar la importación manual desde GeoVictoria por una integración mediante API.
 
-👨‍💻 Autor
+## 👨‍💻 Autor
 
-Esteban Iturra Camaño
+**Esteban Iturra Camaño**
 
 Proyecto desarrollado como parte de mi formación en Python, análisis de datos y automatización de procesos, aplicando programación a un problema operacional real.
