@@ -290,7 +290,7 @@ resumen_semanal_programado["horas_programadas_computables"] = resumen_semanal_pr
 #print(resumen_semanal_programado)
 
 resumen_semanal_programado["diferencia_programacion"] = resumen_semanal_programado["horas_programadas_computables"] - resumen_semanal_programado["horas_referencia_semanal"]
-print(
+"""print(
     resumen_semanal_programado[[
             "trabajador_id",
             "nombre",
@@ -301,10 +301,10 @@ print(
             "diferencia_programacion"
         ]
     ]
-)
+)"""
 
 programacion_semanal_desajustada = (resumen_semanal_programado["tipo_jornada"]== "full_time") & (resumen_semanal_programado["diferencia_programacion"] != 0)
-print(programacion_semanal_desajustada.sum())
+#print(programacion_semanal_desajustada.sum())
 
 
 
@@ -377,3 +377,131 @@ candidatas_salida["fecha_jornada_anterior"] = (
 )
 
 """
+# PROCESAMIENTO DE MARCACIONES GEOVICTORIA
+
+geovictoria = pd.read_excel(
+    "datos/geovictoria.xlsx",
+    header=1
+)
+
+#print(geovictoria.columns.to_list())
+
+columnas_geovictoria = [
+    "Apellidos",
+    "Nombre",
+    "Identificador",
+    "Fecha",
+    "Entró",
+    "Salió",
+    "Entró.1",
+    "Salió.1",
+    
+]
+
+geovictoria = geovictoria[columnas_geovictoria]
+
+geovictoria = geovictoria.rename(
+    columns={
+        "Entró": "hora_ingreso",
+        "Salió": "inicio_colacion",
+        "Entró.1": "fin_colacion",
+        "Salió.1": "hora_salida"
+    }
+)
+
+#print(geovictoria.head())
+#print(geovictoria.columns.to_list())
+#print(geovictoria["Fecha"].str.endswith("(F)").sum()) # Revision de feriados
+fecha_limpia = geovictoria["Fecha"].str[-10:]
+#print(fecha_limpia.head())
+
+geovictoria["fecha"] = pd.to_datetime(fecha_limpia, format="%d-%m-%Y")
+#print(geovictoria[["Fecha", "fecha"]].head())
+#print(geovictoria["fecha"].dtype)
+
+#print(geovictoria["Identificador"].head(5))
+#print(ruta_maestro["rut"].head(5))
+
+rut_geo_invalido = ~(geovictoria["Identificador"].isin(ruta_maestro["rut"]))
+rut_geo_invalido.reset_index()
+#print(geovictoria[rut_geo_invalido]["Identificador"].value_counts()) Para mirar dentro de la mascara rut_geo... columnas que existen en geovictoria
+
+identificadores_excluidos = [
+    "17.213.420-3"
+]
+
+es_id_excluido = geovictoria["Identificador"].isin(identificadores_excluidos)
+#print(es_id_excluido.sum())
+
+rut_geo_realmente_invalido = (es_id_excluido == False) & ~(geovictoria["Identificador"].isin(ruta_maestro["rut"]))
+#print(rut_geo_realmente_invalido.sum())
+
+geovictoria_laboral = geovictoria[
+    ~es_id_excluido
+].copy()
+
+#print(len(geovictoria_laboral))
+#print(len(geovictoria))
+
+geovictoria_con_id = geovictoria_laboral.merge(ruta_maestro[["rut", "trabajador_id"]],
+            left_on= "Identificador",
+            right_on= "rut",
+            how="left"
+
+)
+#print(geovictoria_con_id.columns.tolist())
+##print(geovictoria_con_id[["Identificador", "rut", "trabajador_id"]].head(10))
+#print(geovictoria_con_id["trabajador_id"].isna().sum())
+
+#print(geovictoria_con_id["trabajador_id"].dtype)
+#print(cronograma_mensual["trabajador_id"].dtype)
+
+#print(geovictoria_con_id["fecha"].dtype)
+#print(cronograma_mensual["fecha"].dtype)
+
+marcaciones_duplicadas = geovictoria_con_id.duplicated(
+    subset=["trabajador_id", "fecha"],
+    keep=False
+)
+#print(marcaciones_duplicadas.sum())
+cruce_asistencia = cronograma_mensual.merge(
+    geovictoria_con_id, 
+    on=["trabajador_id", "fecha"],
+    how="outer",
+    indicator=True
+)
+
+#print(cruce_asistencia["_merge"].value_counts())
+solo_geovictoria = cruce_asistencia["_merge"] == "right_only"
+#print(solo_geovictoria.sum())
+fila_solo_geovictoria = cruce_asistencia[solo_geovictoria]
+#print(fila_solo_geovictoria["fecha"])
+fin_semana_sin_marcaciones = fila_solo_geovictoria[[
+    "hora_ingreso",
+    "inicio_colacion",
+    "fin_colacion",
+    "hora_salida"]
+].isna().all(axis=1)
+
+
+#print(fin_semana_sin_marcaciones.sum())
+
+fin_semana_con_marcacion = ~fila_solo_geovictoria[[
+    "hora_ingreso",
+    "inicio_colacion",
+    "fin_colacion",
+    "hora_salida"]
+].isna().all(axis=1)
+
+#print(fin_semana_con_marcacion.sum())
+fin_semana_con_marcaciones = fila_solo_geovictoria[fin_semana_con_marcacion]
+"""print(fin_semana_con_marcaciones[[
+    "Nombre",
+    "Apellidos",
+    "Fecha",
+    "hora_ingreso",
+    "inicio_colacion",
+    "fin_colacion",
+    "hora_salida"
+    ]])"""
+print(geovictoria_con_id["fecha"].min())
