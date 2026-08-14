@@ -504,4 +504,30 @@ fin_semana_con_marcaciones = fila_solo_geovictoria[fin_semana_con_marcacion]
     "fin_colacion",
     "hora_salida"
     ]])"""
-print(geovictoria_con_id["fecha"].min())
+#print(geovictoria_con_id["fecha"].min())
+
+fecha_inicio_periodo = geovictoria_con_id["fecha"].min()
+#print(fecha_inicio_periodo)
+
+posible_arrastre_periodo_anterior = ((fila_solo_geovictoria["fecha"] == fecha_inicio_periodo) 
+                                    & (fila_solo_geovictoria["hora_ingreso"].isna())
+                                    & (fila_solo_geovictoria["inicio_colacion"].isna())
+                                    & (fila_solo_geovictoria["fin_colacion"].isna())
+                                    & (fila_solo_geovictoria["hora_salida"].notna())
+                )
+
+#print(posible_arrastre_periodo_anterior.sum())
+
+incidencias_geovictoria = fila_solo_geovictoria.copy()
+incidencias_geovictoria["clasificacion"] = "REQUIERE_REVISION"
+#print(incidencias_geovictoria["clasificacion"].value_counts())
+
+incidencias_geovictoria.loc[fin_semana_sin_marcaciones, "clasificacion"]= "SIN_MARCACIONES"
+#print(incidencias_geovictoria)
+
+incidencias_geovictoria.loc[posible_arrastre_periodo_anterior, "clasificacion"] = "POSIBLE_ARRASTRE_PERIODO_ANTERIOR"
+#print(incidencias_geovictoria["clasificacion"].value_counts())
+
+coincide_cronograma_geovictoria = cruce_asistencia["_merge"] == "both"
+jornadas_programadas = cruce_asistencia[coincide_cronograma_geovictoria].copy()
+print(len(jornadas_programadas))
