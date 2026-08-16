@@ -839,9 +839,9 @@ jornadas_falta_ingreso.loc[
 
 jornadas_falta_ingreso.loc[
     marcaje_desplazado_seguro, "motivo_ajuste"
-] = "MARCAJE DESPLAZADO"
+] = "MARCAJE_DESPLAZADO"
 
-print(jornadas_falta_ingreso[[
+"""print(jornadas_falta_ingreso[[
     "nombre",
     "hora_ingreso",
     "hora_ingreso_ajustada",
@@ -853,4 +853,222 @@ print(jornadas_falta_ingreso[[
     "estado_ajuste",
     "motivo_ajuste"
 
+]])"""
+
+falta_ingreso_y_fin_colacion =(
+    (jornadas_incompletas["hora_ingreso"].isna()) 
+    & (jornadas_incompletas["inicio_colacion"].notna())
+    & (jornadas_incompletas["fin_colacion"].isna())
+    & (jornadas_incompletas["hora_salida"].notna())
+)
+
+#print(falta_ingreso_y_fin_colacion.sum())
+
+dt_falta_ingreso_fin_colacion = jornadas_incompletas[falta_ingreso_y_fin_colacion].copy()
+
+dt_falta_ingreso_fin_colacion["estado_ajuste"] = "REQUIERE_REVISION"
+dt_falta_ingreso_fin_colacion["motivo_ajuste"] = "FALTA_INGRESO_Y_FIN_COLACION"
+
+entrada_programada_timedelta2 = pd.to_timedelta(dt_falta_ingreso_fin_colacion["entrada_programada"].astype(str))
+diferencia_primera_marca_minutos_2 =((dt_falta_ingreso_fin_colacion["inicio_colacion"] - entrada_programada_timedelta2).dt.total_seconds())/60
+#print(diferencia_primera_marca_minutos_2)
+marcaje_desplazado_sin_colacion = (diferencia_primera_marca_minutos_2 >= 0) & (diferencia_primera_marca_minutos_2 <= 60)
+#print(marcaje_desplazado_sin_colacion)
+
+#print(dt_falta_ingreso_fin_colacion.columns.to_list())
+
+dt_falta_ingreso_fin_colacion["hora_ingreso_ajustada"] = dt_falta_ingreso_fin_colacion["hora_ingreso"]
+
+dt_falta_ingreso_fin_colacion.loc[
+    marcaje_desplazado_sin_colacion, "hora_ingreso_ajustada"
+] = dt_falta_ingreso_fin_colacion.loc[
+    marcaje_desplazado_sin_colacion, "inicio_colacion"
+]
+
+dt_falta_ingreso_fin_colacion.loc[
+    marcaje_desplazado_sin_colacion, "estado_ajuste"
+] = "AJUSTADO_AUTOMATICAMENTE"
+dt_falta_ingreso_fin_colacion.loc[
+    marcaje_desplazado_sin_colacion, "motivo_ajuste"
+] = "MARCAJE_DESPLAZADO_SIN_COLACION"
+"""
+print(dt_falta_ingreso_fin_colacion[[
+    "nombre",
+    "fecha",
+    "entrada_programada",
+    "salida_programada",
+    "hora_ingreso",
+    "hora_ingreso_ajustada",
+    "inicio_colacion",
+    "fin_colacion",
+    "hora_salida",
+    "estado_ajuste",
+    "motivo_ajuste"
+]])"""
+
+sin_marcaciones_trabajo = (cantidad_marcaciones_trabajo == 0)
+#print(sin_marcaciones_trabajo.sum())
+
+
+dt_sin_marcaciones_jornada_trabajo = jornadas_trabajo[sin_marcaciones_trabajo]
+
+dt_sin_marcaciones_jornada_trabajo["estado_asistencia"] = "REQUIERE_REVISION"
+
+dt_sin_marcaciones_jornada_trabajo["motivo_asistencia"] = "SIN_MARCACIONES"
+
+
+"""print(dt_sin_marcaciones_jornada_trabajo[[
+    "nombre",
+    "fecha",
+    "entrada_programada",
+    "salida_programada",
+    "colacion_programada_minutos",
+    "hora_ingreso",
+    "inicio_colacion",
+    "fin_colacion",
+    "hora_salida",
+    "observacion" 
+]])"""
+
+es_permiso_medico = (dt_sin_marcaciones_jornada_trabajo["observacion"].str.contains("permiso medico", case=False, na=False))
+dt_sin_marcaciones_jornada_trabajo.loc[
+    es_permiso_medico, "estado_asistencia"
+] = "AUSENCIA_JUSTIFICADA"
+dt_sin_marcaciones_jornada_trabajo.loc[
+    es_permiso_medico, "motivo_asistencia"
+] = "PERMISO_MEDICO"
+
+"""print(dt_sin_marcaciones_jornada_trabajo[[
+    "nombre",
+    "fecha",
+    "estado_asistencia",
+    "motivo_asistencia"
+]])"""
+#print(es_permiso_medico.sum())
+es_dia_libre = (jornadas_programadas["estado_programado"] == "libre")
+#print(es_dia_libre.sum())
+
+jornadas_libres = jornadas_programadas[es_dia_libre].copy()
+jornadas_libres["estado_asistencia"] = "REQUIERE_REVISION"
+jornadas_libres["motivo_asistencia"] = "MARCACION_O_SITUACION_EN_DIA_LIBRE"
+
+#print(len(jornadas_libres))
+"""print(jornadas_libres[[
+    "nombre",
+    "fecha",
+    "observacion"
+]])"""
+
+cantidad_marcaciones_libres = (
+    jornadas_libres[["hora_ingreso", "inicio_colacion", "fin_colacion", "hora_salida"]].notna().sum(axis=1)
+)
+#print(cantidad_marcaciones_libres.value_counts().sort_index())
+es_vacaciones = (jornadas_libres["observacion"].str.contains("vacaciones", case=False, na=False))
+#print(es_vacaciones.sum())
+
+vacaciones_sin_marcaciones = (
+    es_vacaciones & (cantidad_marcaciones_libres == 0)
+)
+
+jornadas_libres.loc[
+    vacaciones_sin_marcaciones, "estado_asistencia"] = "AUSENCIA_JUSTIFICADA"
+jornadas_libres.loc[
+    vacaciones_sin_marcaciones, "motivo_asistencia"] = "VACACIONES"
+"""
+print(jornadas_libres[[
+    "nombre",
+    "fecha",
+    "observacion",
+    "estado_asistencia",
+    "motivo_asistencia"
 ]])
+"""
+
+total_patrones_incompletos = (
+    falta_inicio_colacion.sum()
+    + falta_fin_colacion.sum()
+    + sin_marcaciones_colacion.sum()
+    + falta_hora_ingreso.sum()
+    + falta_ingreso_y_fin_colacion.sum()
+    + sin_marcaciones_trabajo.sum()
+)
+
+#print(total_patrones_incompletos)
+#print(len(jornadas_incompletas))
+cobertura_patrones = pd.DataFrame({
+    "falta_inicio_colacion": falta_inicio_colacion,
+    "falta_fin_colacion": falta_fin_colacion,
+    "sin_marcaciones_colacion": sin_marcaciones_colacion,
+    "falta_hora_ingreso": falta_hora_ingreso,
+    "falta_ingreso_y_fin_colacion": falta_ingreso_y_fin_colacion,
+    "sin_marcaciones_jornada_trabajo": sin_marcaciones_trabajo
+})
+
+cantidad_patrones_por_fila = cobertura_patrones.sum(axis=1)
+#print(cantidad_patrones_por_fila.value_counts().sort_index())
+
+total_ajustadas_automaticamente = (
+    falta_inicio_colacion.sum()
+    + falta_fin_colacion.sum()
+    + marcaje_desplazado_seguro.sum()
+    + marcaje_desplazado_sin_colacion.sum()
+)
+#print(total_ajustadas_automaticamente)
+
+sin_colacion_no_programada = (sin_marcaciones_colacion) & (jornadas_incompletas["colacion_programada_minutos"]== 0)
+total_sin_ajuste = sin_colacion_no_programada.sum()
+#print(total_sin_ajuste)
+
+#print(es_permiso_medico.sum())
+
+#print(colacion_programada_sin_marcaciones.sum())
+#print((jornadas_falta_ingreso["estado_ajuste"] == "REQUIERE_REVISION").sum())
+#print((dt_falta_ingreso_fin_colacion["estado_ajuste"] == "REQUIERE_REVISION").sum())
+
+print(
+    jornadas_sin_marcaciones_colacion.loc[
+        colacion_programada_sin_marcaciones,
+        [
+            "nombre",
+            "fecha",
+            "estado_programado",
+            "colacion_programada_minutos",
+            "hora_ingreso",
+            "inicio_colacion",
+            "fin_colacion",
+            "hora_salida"
+        ]
+    ]
+)
+
+print(
+    jornadas_falta_ingreso.loc[
+        jornadas_falta_ingreso["estado_ajuste"] == "REQUIERE_REVISION",
+        [
+            "nombre",
+            "fecha",
+            "entrada_programada",
+            "hora_ingreso",
+            "inicio_colacion",
+            "fin_colacion",
+            "hora_salida",
+            "motivo_ajuste"
+        ]
+    ]
+)
+
+print(
+    dt_falta_ingreso_fin_colacion.loc[
+        dt_falta_ingreso_fin_colacion["estado_ajuste"] == "REQUIERE_REVISION",
+        [
+            "nombre",
+            "fecha",
+            "entrada_programada",
+            "hora_ingreso",
+            "inicio_colacion",
+            "fin_colacion",
+            "hora_salida",
+            "motivo_ajuste"
+        ]
+    ]
+)
