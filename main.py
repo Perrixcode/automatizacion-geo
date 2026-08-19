@@ -665,10 +665,18 @@ jornadas_falta_inicio_colacion["inicio_colacion_ajustada"] = (jornadas_falta_ini
     "inicio_colacion_ajustada"
 ]])"""
 
+inicio_colacion_ajustada_fuera_jornada = jornadas_falta_inicio_colacion["inicio_colacion_ajustada"] <= jornadas_falta_inicio_colacion["hora_ingreso"]
+
 jornadas_falta_inicio_colacion["estado_ajuste"] = "AJUSTADO_AUTOMATICAMENTE"
 jornadas_falta_inicio_colacion["motivo_ajuste"] = "FALTA_INICIO_COLACION"
+jornadas_falta_inicio_colacion.loc[
+    inicio_colacion_ajustada_fuera_jornada, "estado_ajuste"
+] = "REQUIERE_REVISION"
 
-inicio_colacion_ajustada_fuera_jornada = jornadas_falta_inicio_colacion["inicio_colacion_ajustada"] <= jornadas_falta_inicio_colacion["hora_ingreso"]
+jornadas_falta_inicio_colacion.loc[
+    inicio_colacion_ajustada_fuera_jornada, "motivo_ajuste"
+] = "INICIO_COLACION_AJUSTADO_FUERA_JORNADA"
+
 #print(inicio_colacion_ajustada_fuera_jornada.sum())
 
 """print(jornadas_falta_inicio_colacion[[
@@ -697,10 +705,16 @@ jornadas_falta_fin_colacion["duracion_colacion_programada"] = pd.to_timedelta(jo
 ]]
 )"""
 jornadas_falta_fin_colacion["fin_colacion_ajustada"] = jornadas_falta_fin_colacion["inicio_colacion"]+ jornadas_falta_fin_colacion["duracion_colacion_programada"]
-
-
+fin_colacion_ajustada_fuera_jornada = jornadas_falta_fin_colacion["fin_colacion_ajustada"]>jornadas_falta_fin_colacion["hora_salida"]
 jornadas_falta_fin_colacion["estado_ajuste"] = "AJUSTADO_AUTOMATICAMENTE"
 jornadas_falta_fin_colacion["motivo_ajuste"] = "FALTA_FIN_COLACION"
+
+jornadas_falta_fin_colacion.loc[
+    fin_colacion_ajustada_fuera_jornada, "estado_ajuste"
+] = "REQUIERE_REVISION"
+jornadas_falta_fin_colacion.loc[
+    fin_colacion_ajustada_fuera_jornada, "motivo_ajuste"
+] = "FIN_COLACION_AJUSTADA_FUERA_JORNADA"
 
 """print(jornadas_falta_fin_colacion[[
     "nombre",
@@ -714,7 +728,6 @@ jornadas_falta_fin_colacion["motivo_ajuste"] = "FALTA_FIN_COLACION"
 
 ]])"""
 
-fin_colacion_ajustada_fuera_jornada = jornadas_falta_fin_colacion["fin_colacion_ajustada"]>jornadas_falta_fin_colacion["hora_salida"]
 #print(fin_colacion_ajustada_fuera_jornada.sum())
 
 falta_hora_ingreso = (
@@ -910,7 +923,7 @@ sin_marcaciones_trabajo = (cantidad_marcaciones_trabajo == 0)
 #print(sin_marcaciones_trabajo.sum())
 
 
-dt_sin_marcaciones_jornada_trabajo = jornadas_trabajo[sin_marcaciones_trabajo]
+dt_sin_marcaciones_jornada_trabajo = jornadas_trabajo[sin_marcaciones_trabajo].copy()
 
 dt_sin_marcaciones_jornada_trabajo["estado_asistencia"] = "REQUIERE_REVISION"
 
@@ -1024,7 +1037,7 @@ total_sin_ajuste = sin_colacion_no_programada.sum()
 #print(colacion_programada_sin_marcaciones.sum())
 #print((jornadas_falta_ingreso["estado_ajuste"] == "REQUIERE_REVISION").sum())
 #print((dt_falta_ingreso_fin_colacion["estado_ajuste"] == "REQUIERE_REVISION").sum())
-
+"""
 print(
     jornadas_sin_marcaciones_colacion.loc[
         colacion_programada_sin_marcaciones,
@@ -1071,4 +1084,148 @@ print(
             "motivo_ajuste"
         ]
     ]
+)"""
+
+jornadas_clasificadas = jornadas_incompletas.copy()
+
+jornadas_clasificadas["estado_asistencia"] = "REQUIERE_REVISION"
+jornadas_clasificadas["motivo_asistencia"] = "PATRON_NO_RESUELTO"
+
+#print(jornadas_clasificadas["estado_asistencia"].value_counts())
+
+jornadas_clasificadas.loc[
+    sin_colacion_no_programada, "estado_asistencia"
+] = "OK"
+
+jornadas_clasificadas.loc[
+    sin_colacion_no_programada, "motivo_asistencia"
+] = "SIN_COLACION_PROGRAMADA"
+
+#print(jornadas_clasificadas["estado_asistencia"].value_counts())
+
+indices_falta_inicio_auto = jornadas_falta_inicio_colacion.index[
+    jornadas_falta_inicio_colacion["estado_ajuste"] == "AJUSTADO_AUTOMATICAMENTE"
+]
+
+#print(indices_falta_inicio_auto)
+#print(len(indices_falta_inicio_auto))
+
+jornadas_clasificadas.loc[
+    indices_falta_inicio_auto, "estado_asistencia"
+] = "AJUSTADO_AUTOMATICAMENTE"
+
+jornadas_clasificadas.loc[
+    indices_falta_inicio_auto, "motivo_asistencia"
+] = "FALTA_INICIO_COLACION"
+
+#print(jornadas_clasificadas["estado_asistencia"].value_counts())
+
+jornadas_clasificadas["inicio_colacion_ajustada"] = (jornadas_clasificadas["inicio_colacion"])
+
+jornadas_clasificadas.loc[
+    indices_falta_inicio_auto, "inicio_colacion_ajustada"
+] = jornadas_falta_inicio_colacion.loc[
+    indices_falta_inicio_auto, "inicio_colacion_ajustada"
+]
+
+"""print(jornadas_clasificadas.loc[
+        indices_falta_inicio_auto,
+        [   
+            "nombre",
+            "fecha",
+            "inicio_colacion",
+            "inicio_colacion_ajustada",
+            "estado_asistencia",
+            "motivo_asistencia"
+        ]
+])"""
+
+indices_falta_fin_auto = jornadas_falta_fin_colacion.index[
+    jornadas_falta_fin_colacion["estado_ajuste"] == "AJUSTADO_AUTOMATICAMENTE"
+]
+
+#print(len(indices_falta_fin_auto))
+jornadas_clasificadas.loc[
+    indices_falta_fin_auto,
+    "estado_asistencia"
+] = "AJUSTADO_AUTOMATICAMENTE"
+
+jornadas_clasificadas.loc[
+    indices_falta_fin_auto, "motivo_asistencia"
+] = "FALTA_FIN_COLACION"
+
+jornadas_clasificadas["fin_colacion_ajustada"] = (
+    jornadas_clasificadas["fin_colacion"]
 )
+
+jornadas_clasificadas.loc[
+    indices_falta_fin_auto,
+    "fin_colacion_ajustada"
+] = jornadas_falta_fin_colacion.loc[
+    indices_falta_fin_auto,
+    "fin_colacion_ajustada"
+]
+
+#print(jornadas_clasificadas["estado_asistencia"].value_counts())
+
+jornadas_clasificadas["hora_ingreso_ajustada"] = (
+    jornadas_clasificadas["hora_ingreso"]
+)
+indices_marcaje_desplazado = jornadas_falta_ingreso.index[
+    jornadas_falta_ingreso["estado_ajuste"] == "AJUSTADO_AUTOMATICAMENTE"
+]
+
+#print(len(indices_marcaje_desplazado))
+
+jornadas_clasificadas.loc[
+    indices_marcaje_desplazado,
+    "estado_asistencia"
+] = "AJUSTADO_AUTOMATICAMENTE"
+
+jornadas_clasificadas.loc[
+    indices_marcaje_desplazado,
+    "motivo_asistencia"
+] = "MARCAJE_DESPLAZADO"
+
+jornadas_clasificadas.loc[
+    indices_marcaje_desplazado, "hora_ingreso_ajustada"
+] = jornadas_falta_ingreso.loc[indices_marcaje_desplazado, "hora_ingreso_ajustada"]
+
+indice_desplazado_sin_colacion = dt_falta_ingreso_fin_colacion.index[
+    dt_falta_ingreso_fin_colacion["estado_ajuste"] == "AJUSTADO_AUTOMATICAMENTE"
+]
+
+jornadas_clasificadas.loc[
+    indice_desplazado_sin_colacion, "estado_asistencia"
+
+] = "AJUSTADO_AUTOMATICAMENTE"
+jornadas_clasificadas.loc[
+    indice_desplazado_sin_colacion, "motivo_asistencia"
+] = "MARCAJE_DESPLAZADO_SIN_COLACION"
+
+jornadas_clasificadas.loc[
+    indice_desplazado_sin_colacion, "hora_ingreso_ajustada"
+] = dt_falta_ingreso_fin_colacion.loc[
+    indice_desplazado_sin_colacion, "hora_ingreso_ajustada"
+]
+
+print(jornadas_clasificadas["estado_asistencia"].value_counts())
+
+#print(jornadas_clasificadas["estado_asistencia"].value_counts())
+#print(indices_marcaje_desplazado)
+#print(indice_desplazado_sin_colacion)
+"""
+print(
+    jornadas_clasificadas.loc[
+        list(indices_marcaje_desplazado) + list(indice_desplazado_sin_colacion),
+        [
+            "nombre",
+            "fecha",
+            "estado_asistencia",
+            "motivo_asistencia",
+            "hora_ingreso",
+            "hora_ingreso_ajustada"
+
+        ]
+    ]
+)"""
