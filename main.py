@@ -1209,7 +1209,7 @@ jornadas_clasificadas.loc[
     indice_desplazado_sin_colacion, "hora_ingreso_ajustada"
 ]
 
-print(jornadas_clasificadas["estado_asistencia"].value_counts())
+#print(jornadas_clasificadas["estado_asistencia"].value_counts())
 
 #print(jornadas_clasificadas["estado_asistencia"].value_counts())
 #print(indices_marcaje_desplazado)
@@ -1229,3 +1229,70 @@ print(
         ]
     ]
 )"""
+
+indices_permiso_medico = dt_sin_marcaciones_jornada_trabajo.index[
+    dt_sin_marcaciones_jornada_trabajo["estado_asistencia"] == "AUSENCIA_JUSTIFICADA"
+]
+#print(indices_permiso_medico)
+#print(len(indices_permiso_medico))
+
+jornadas_clasificadas.loc[
+    indices_permiso_medico,
+    "estado_asistencia"
+] = "AUSENCIA_JUSTIFICADA"
+
+jornadas_clasificadas.loc[
+    indices_permiso_medico,
+    "motivo_asistencia"
+] = "PERMISO_MEDICO"
+
+#rint(jornadas_clasificadas["estado_asistencia"].value_counts())
+#print(jornadas_clasificadas["motivo_asistencia"].value_counts())
+
+indices_colacion_revision = jornadas_sin_marcaciones_colacion.index[
+    colacion_programada_sin_marcaciones
+]
+
+print(indices_colacion_revision)
+jornadas_clasificadas.loc[
+    indices_colacion_revision
+]
+
+jornadas_clasificadas.loc[
+    indices_colacion_revision,
+    "motivo_asistencia"
+] = "COLACION_PROGRAMADA_SIN_MARCACIONES"
+
+indices_falta_ingreso_revision = jornadas_falta_ingreso.index[
+    jornadas_falta_ingreso["estado_ajuste"] == "REQUIERE_REVISION"]
+
+jornadas_clasificadas.loc[
+    indices_falta_ingreso_revision,
+    "motivo_asistencia"
+] = "FALTA_HORA_INGRESO"
+
+indices_falta_ingreso_fin_revision = dt_falta_ingreso_fin_colacion.index[
+    dt_falta_ingreso_fin_colacion["estado_ajuste"] == "REQUIERE_REVISION"
+]
+
+jornadas_clasificadas.loc[
+    indices_falta_ingreso_fin_revision,
+    "motivo_asistencia"
+] = "FALTA_INGRESO_Y_FIN_COLACION"
+
+"""print(jornadas_clasificadas.loc[
+    jornadas_clasificadas["motivo_asistencia"] == "PATRON_NO_RESUELTO",
+    [
+        "nombre",
+        "fecha",
+        "estado_asistencia",
+        "motivo_asistencia",
+        "hora_ingreso",
+        "inicio_colacion",
+        "fin_colacion",
+        "hora_salida"
+    ]
+]
+)"""
+
+print(jornadas_clasificadas["motivo_asistencia"].value_counts())
