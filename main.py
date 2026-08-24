@@ -2,6 +2,22 @@ import pandas as pd #Llamo al directorio pandas y lo abrevio como pd
 import openpyxl # Llamo al directorio openpyxl
 import datetime 
 
+#FUNCIONES
+
+def inicializar_clasificacion_jornadas (jornadas):
+    clasificadas = jornadas.copy()
+
+    clasificadas["estado_asistencia"] = "REQUIERE_REVISION"
+    clasificadas["motivo_asistencia"] = "PATRON_NO_RESUELTO"
+    return clasificadas
+
+def aplicar_clasificacion(jornadas, indices, estado, motivo):
+    jornadas.loc[indices, "estado_asistencia"] = estado
+    jornadas.loc[indices, "motivo_asistencia"] = motivo
+
+
+
+
 #FUNCIONES USADAS PARA CONSTRUIR LOS DATOS
 
 """print(datos[["Fecha", "fecha"]].head(30))
@@ -776,13 +792,6 @@ falta_ingreso_marcaje_desplazado = (diferencia_primera_marca_minutos >= 0) & (di
 #print(falta_ingreso_marcaje_desplazado.sum())
 
 
-jornadas_falta_ingreso.loc[
-    falta_ingreso_marcaje_desplazado, "estado_ajuste"
-] = "AJUSTADO_AUTOMATICAMENTE"
-jornadas_falta_ingreso.loc[
-    falta_ingreso_marcaje_desplazado, "motivo_ajuste"
-] = "MARCAJE_DESPLAZADO"
-
 """print(jornadas_falta_ingreso[[
     "nombre",
     "estado_ajuste",
@@ -898,12 +907,7 @@ dt_falta_ingreso_fin_colacion.loc[
     marcaje_desplazado_sin_colacion, "inicio_colacion"
 ]
 
-dt_falta_ingreso_fin_colacion.loc[
-    marcaje_desplazado_sin_colacion, "estado_ajuste"
-] = "AJUSTADO_AUTOMATICAMENTE"
-dt_falta_ingreso_fin_colacion.loc[
-    marcaje_desplazado_sin_colacion, "motivo_ajuste"
-] = "MARCAJE_DESPLAZADO_SIN_COLACION"
+
 """
 print(dt_falta_ingreso_fin_colacion[[
     "nombre",
@@ -944,12 +948,7 @@ dt_sin_marcaciones_jornada_trabajo["motivo_asistencia"] = "SIN_MARCACIONES"
 ]])"""
 
 es_permiso_medico = (dt_sin_marcaciones_jornada_trabajo["observacion"].str.contains("permiso medico", case=False, na=False))
-dt_sin_marcaciones_jornada_trabajo.loc[
-    es_permiso_medico, "estado_asistencia"
-] = "AUSENCIA_JUSTIFICADA"
-dt_sin_marcaciones_jornada_trabajo.loc[
-    es_permiso_medico, "motivo_asistencia"
-] = "PERMISO_MEDICO"
+
 
 """print(dt_sin_marcaciones_jornada_trabajo[[
     "nombre",
@@ -1093,13 +1092,6 @@ jornadas_clasificadas["motivo_asistencia"] = "PATRON_NO_RESUELTO"
 
 #print(jornadas_clasificadas["estado_asistencia"].value_counts())
 
-jornadas_clasificadas.loc[
-    sin_colacion_no_programada, "estado_asistencia"
-] = "OK"
-
-jornadas_clasificadas.loc[
-    sin_colacion_no_programada, "motivo_asistencia"
-] = "SIN_COLACION_PROGRAMADA"
 
 #print(jornadas_clasificadas["estado_asistencia"].value_counts())
 
@@ -1109,14 +1101,6 @@ indices_falta_inicio_auto = jornadas_falta_inicio_colacion.index[
 
 #print(indices_falta_inicio_auto)
 #print(len(indices_falta_inicio_auto))
-
-jornadas_clasificadas.loc[
-    indices_falta_inicio_auto, "estado_asistencia"
-] = "AJUSTADO_AUTOMATICAMENTE"
-
-jornadas_clasificadas.loc[
-    indices_falta_inicio_auto, "motivo_asistencia"
-] = "FALTA_INICIO_COLACION"
 
 #print(jornadas_clasificadas["estado_asistencia"].value_counts())
 
@@ -1145,15 +1129,6 @@ indices_falta_fin_auto = jornadas_falta_fin_colacion.index[
 ]
 
 #print(len(indices_falta_fin_auto))
-jornadas_clasificadas.loc[
-    indices_falta_fin_auto,
-    "estado_asistencia"
-] = "AJUSTADO_AUTOMATICAMENTE"
-
-jornadas_clasificadas.loc[
-    indices_falta_fin_auto, "motivo_asistencia"
-] = "FALTA_FIN_COLACION"
-
 jornadas_clasificadas["fin_colacion_ajustada"] = (
     jornadas_clasificadas["fin_colacion"]
 )
@@ -1178,16 +1153,6 @@ indices_marcaje_desplazado = jornadas_falta_ingreso.index[
 #print(len(indices_marcaje_desplazado))
 
 jornadas_clasificadas.loc[
-    indices_marcaje_desplazado,
-    "estado_asistencia"
-] = "AJUSTADO_AUTOMATICAMENTE"
-
-jornadas_clasificadas.loc[
-    indices_marcaje_desplazado,
-    "motivo_asistencia"
-] = "MARCAJE_DESPLAZADO"
-
-jornadas_clasificadas.loc[
     indices_marcaje_desplazado, "hora_ingreso_ajustada"
 ] = jornadas_falta_ingreso.loc[indices_marcaje_desplazado, "hora_ingreso_ajustada"]
 
@@ -1195,13 +1160,7 @@ indice_desplazado_sin_colacion = dt_falta_ingreso_fin_colacion.index[
     dt_falta_ingreso_fin_colacion["estado_ajuste"] == "AJUSTADO_AUTOMATICAMENTE"
 ]
 
-jornadas_clasificadas.loc[
-    indice_desplazado_sin_colacion, "estado_asistencia"
 
-] = "AJUSTADO_AUTOMATICAMENTE"
-jornadas_clasificadas.loc[
-    indice_desplazado_sin_colacion, "motivo_asistencia"
-] = "MARCAJE_DESPLAZADO_SIN_COLACION"
 
 jornadas_clasificadas.loc[
     indice_desplazado_sin_colacion, "hora_ingreso_ajustada"
@@ -1236,16 +1195,6 @@ indices_permiso_medico = dt_sin_marcaciones_jornada_trabajo.index[
 #print(indices_permiso_medico)
 #print(len(indices_permiso_medico))
 
-jornadas_clasificadas.loc[
-    indices_permiso_medico,
-    "estado_asistencia"
-] = "AUSENCIA_JUSTIFICADA"
-
-jornadas_clasificadas.loc[
-    indices_permiso_medico,
-    "motivo_asistencia"
-] = "PERMISO_MEDICO"
-
 #rint(jornadas_clasificadas["estado_asistencia"].value_counts())
 #print(jornadas_clasificadas["motivo_asistencia"].value_counts())
 
@@ -1253,11 +1202,11 @@ indices_colacion_revision = jornadas_sin_marcaciones_colacion.index[
     colacion_programada_sin_marcaciones
 ]
 
-print(indices_colacion_revision)
+"""print(indices_colacion_revision)
 jornadas_clasificadas.loc[
     indices_colacion_revision
 ]
-
+"""
 jornadas_clasificadas.loc[
     indices_colacion_revision,
     "motivo_asistencia"
@@ -1279,8 +1228,8 @@ jornadas_clasificadas.loc[
     indices_falta_ingreso_fin_revision,
     "motivo_asistencia"
 ] = "FALTA_INGRESO_Y_FIN_COLACION"
-
-"""print(jornadas_clasificadas.loc[
+"""
+print(jornadas_clasificadas.loc[
     jornadas_clasificadas["motivo_asistencia"] == "PATRON_NO_RESUELTO",
     [
         "nombre",
@@ -1295,4 +1244,71 @@ jornadas_clasificadas.loc[
 ]
 )"""
 
+
+jornadas_clasificadas = inicializar_clasificacion_jornadas(jornadas_incompletas)
+
+aplicar_clasificacion(
+    jornadas_clasificadas,
+    indices_falta_fin_auto,
+    "AJUSTADO_AUTOMATICAMENTE",
+    "FALTA_FIN_COLACION"
+)
+
+aplicar_clasificacion(
+    jornadas_clasificadas,
+    indices_falta_inicio_auto,
+    "AJUSTADO_AUTOMATICAMENTE",
+    "FALTA_INICIO_COLACION"
+)
+
+aplicar_clasificacion(
+    jornadas_clasificadas,
+    indices_marcaje_desplazado,
+    "AJUSTADO_AUTOMATICAMENTE",
+    "MARCAJE_DESPLAZADO"
+)
+
+aplicar_clasificacion(
+    jornadas_clasificadas,
+    indice_desplazado_sin_colacion,
+    "AJUSTADO_AUTOMATICAMENTE",
+    "MARCAJE_DESPLAZADO_SIN_COLACION"
+)
+
+aplicar_clasificacion(
+    jornadas_clasificadas,
+    jornadas_clasificadas.index[sin_colacion_no_programada],
+    "OK",
+    "SIN_COLACION_PROGRAMADA"
+)
+
+aplicar_clasificacion(
+    jornadas_clasificadas,
+    indices_permiso_medico,
+    "AUSENCIA_JUSTIFICADA",
+    "PERMISO_MEDICO"
+)
+
+aplicar_clasificacion(
+    jornadas_clasificadas,
+    indices_colacion_revision,
+    "REQUIERE_REVISION",
+    "COLACION_PROGRAMADA_SIN_MARCACIONES"
+)
+
+aplicar_clasificacion(
+    jornadas_clasificadas,
+    indices_falta_ingreso_revision,
+    "REQUIERE_REVISION",
+    "FALTA_HORA_INGRESO"
+)
+
+aplicar_clasificacion(
+    jornadas_clasificadas,
+    indices_falta_ingreso_fin_revision,
+    "REQUIERE_REVISION",
+    "FALTA_INGRESO_Y_FIN_COLACION"
+)
+
+print(jornadas_clasificadas["estado_asistencia"].value_counts())
 print(jornadas_clasificadas["motivo_asistencia"].value_counts())
