@@ -15,6 +15,11 @@ def aplicar_clasificacion(jornadas, indices, estado, motivo):
     jornadas.loc[indices, "estado_asistencia"] = estado
     jornadas.loc[indices, "motivo_asistencia"] = motivo
 
+def inicializar_marcaciones_ajustadas(jornadas):
+    jornadas["hora_ingreso_ajustada"] = jornadas["hora_ingreso"]
+    jornadas["inicio_colacion_ajustada"] = jornadas["inicio_colacion"]
+    jornadas["fin_colacion_ajustada"] = jornadas["fin_colacion"]
+
 
 
 
@@ -562,7 +567,7 @@ marcacion_completa = jornadas_programadas[[
 es_jornada_trabajo = jornadas_programadas["estado_programado"] == "trabajo"
 jornadas_trabajo = jornadas_programadas[es_jornada_trabajo].copy()
 #print(len(jornadas_trabajo))
-
+inicializar_marcaciones_ajustadas(jornadas_trabajo)
 marcacion_completa_trabajo = jornadas_trabajo[[
         "hora_ingreso",
         "inicio_colacion",
@@ -1084,11 +1089,9 @@ print(
         ]
     ]
 )"""
-
-jornadas_clasificadas = jornadas_incompletas.copy()
-
-jornadas_clasificadas["estado_asistencia"] = "REQUIERE_REVISION"
-jornadas_clasificadas["motivo_asistencia"] = "PATRON_NO_RESUELTO"
+jornadas_clasificadas = inicializar_clasificacion_jornadas(
+    jornadas_incompletas
+)
 
 #print(jornadas_clasificadas["estado_asistencia"].value_counts())
 
@@ -1156,27 +1159,27 @@ jornadas_clasificadas.loc[
     indices_marcaje_desplazado, "hora_ingreso_ajustada"
 ] = jornadas_falta_ingreso.loc[indices_marcaje_desplazado, "hora_ingreso_ajustada"]
 
-indice_desplazado_sin_colacion = dt_falta_ingreso_fin_colacion.index[
-    dt_falta_ingreso_fin_colacion["estado_ajuste"] == "AJUSTADO_AUTOMATICAMENTE"
+indices_desplazado_sin_colacion = dt_falta_ingreso_fin_colacion.index[
+    marcaje_desplazado_sin_colacion
 ]
 
 
 
 jornadas_clasificadas.loc[
-    indice_desplazado_sin_colacion, "hora_ingreso_ajustada"
+    indices_desplazado_sin_colacion, "hora_ingreso_ajustada"
 ] = dt_falta_ingreso_fin_colacion.loc[
-    indice_desplazado_sin_colacion, "hora_ingreso_ajustada"
+    indices_desplazado_sin_colacion, "hora_ingreso_ajustada"
 ]
 
 #print(jornadas_clasificadas["estado_asistencia"].value_counts())
 
 #print(jornadas_clasificadas["estado_asistencia"].value_counts())
 #print(indices_marcaje_desplazado)
-#print(indice_desplazado_sin_colacion)
+#print(indices_desplazado_sin_colacion)
 """
 print(
     jornadas_clasificadas.loc[
-        list(indices_marcaje_desplazado) + list(indice_desplazado_sin_colacion),
+        list(indices_marcaje_desplazado) + list(indices_desplazado_sin_colacion),
         [
             "nombre",
             "fecha",
@@ -1190,7 +1193,7 @@ print(
 )"""
 
 indices_permiso_medico = dt_sin_marcaciones_jornada_trabajo.index[
-    dt_sin_marcaciones_jornada_trabajo["estado_asistencia"] == "AUSENCIA_JUSTIFICADA"
+    es_permiso_medico
 ]
 #print(indices_permiso_medico)
 #print(len(indices_permiso_medico))
@@ -1221,7 +1224,7 @@ jornadas_clasificadas.loc[
 ] = "FALTA_HORA_INGRESO"
 
 indices_falta_ingreso_fin_revision = dt_falta_ingreso_fin_colacion.index[
-    dt_falta_ingreso_fin_colacion["estado_ajuste"] == "REQUIERE_REVISION"
+    ~marcaje_desplazado_sin_colacion
 ]
 
 jornadas_clasificadas.loc[
@@ -1243,9 +1246,46 @@ print(jornadas_clasificadas.loc[
     ]
 ]
 )"""
+entrada_programada_trabajo_timedelta = pd.to_timedelta(
+    jornadas_trabajo["entrada_programada"].astype(str)
+)
+
+minutos_anticipacion_ingreso = (
+    (
+        entrada_programada_trabajo_timedelta - jornadas_trabajo["hora_ingreso"]
+    )
+    .dt.total_seconds() / 60
+)
+
+ingreso_anticipado_menor_30 = (
+    (minutos_anticipacion_ingreso > 0)
+    &(minutos_anticipacion_ingreso < 30)
+)
+
+ingreso_anticipado_revision = (
+    (minutos_anticipacion_ingreso >= 30)
+    &(minutos_anticipacion_ingreso < 60)
+)
+
+ingreso_anticipado_60_o_mas = (
+    (minutos_anticipacion_ingreso >= 60)
+)
 
 
-jornadas_clasificadas = inicializar_clasificacion_jornadas(jornadas_incompletas)
+jornadas_trabajo.loc[
+    ingreso_anticipado_menor_30,
+    "hora_ingreso_ajustada"
+] = entrada_programada_trabajo_timedelta.loc[
+    ingreso_anticipado_menor_30
+]
+jornadas_trabajo["estado_ajuste_ingreso"] = "SIN_AJUSTE"
+jornadas_trabajo["motivo_ajuste_ingreso"] = "SIN_AJUSTE" 
+
+
+
+
+
+
 
 aplicar_clasificacion(
     jornadas_clasificadas,
@@ -1270,7 +1310,7 @@ aplicar_clasificacion(
 
 aplicar_clasificacion(
     jornadas_clasificadas,
-    indice_desplazado_sin_colacion,
+    indices_desplazado_sin_colacion,
     "AJUSTADO_AUTOMATICAMENTE",
     "MARCAJE_DESPLAZADO_SIN_COLACION"
 )
@@ -1281,6 +1321,9 @@ aplicar_clasificacion(
     "OK",
     "SIN_COLACION_PROGRAMADA"
 )
+
+print("INDICES PERMISO MEDICO:")
+print(indices_permiso_medico)
 
 aplicar_clasificacion(
     jornadas_clasificadas,
@@ -1310,5 +1353,52 @@ aplicar_clasificacion(
     "FALTA_INGRESO_Y_FIN_COLACION"
 )
 
+print("CLASIFICACION DE INCOMPLETAS:")
 print(jornadas_clasificadas["estado_asistencia"].value_counts())
 print(jornadas_clasificadas["motivo_asistencia"].value_counts())
+
+jornadas_trabajo["estado_asistencia"] = "OK"
+jornadas_trabajo["motivo_asistencia"] = "MARCACIONES_COMPLETAS"
+indices_jornadas_incompletas = jornadas_clasificadas.index
+
+jornadas_trabajo.loc[
+    indices_jornadas_incompletas,
+    "estado_asistencia"
+] = jornadas_clasificadas.loc[
+    indices_jornadas_incompletas,
+    "estado_asistencia"
+]
+
+jornadas_trabajo.loc[
+    indices_jornadas_incompletas,
+    "motivo_asistencia"
+] = jornadas_clasificadas.loc[
+    indices_jornadas_incompletas,
+    "motivo_asistencia"
+]
+
+jornadas_trabajo.loc[
+    ingreso_anticipado_menor_30,
+    "estado_ajuste_ingreso"
+] = "AJUSTADO_AUTOMATICAMENTE"
+
+jornadas_trabajo.loc[
+    ingreso_anticipado_menor_30,
+    "motivo_ajuste_ingreso"
+] = "INGRESO_ANTICIPADO_MENOR_30"
+
+jornadas_trabajo.loc[
+    ingreso_anticipado_revision,
+    "estado_ajuste_ingreso"
+] = "REQUIERE_REVISION"
+
+jornadas_trabajo.loc[
+    ingreso_anticipado_revision,
+    "motivo_ajuste_ingreso"
+] = "INGRESO_ANTICIPADO_30_A_59"
+
+jornadas_trabajo.loc[
+    ingreso_anticipado_60_o_mas,
+    "motivo_ajuste_ingreso"
+] = "INGRESO_ANTICIPADO_60_O_MAS_VALIDO"
+
