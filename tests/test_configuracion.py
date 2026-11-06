@@ -7,10 +7,9 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-from unittest.mock import patch
 
 from configuracion import ErrorConfiguracion, cargar_identificadores_excluidos, validar_exclusiones
-from scripts.migrar_exclusiones import extraer_exclusiones, guardar_exclusiones, leer_version_git
+from scripts.migrar_exclusiones import extraer_exclusiones, guardar_exclusiones
 
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -115,26 +114,22 @@ class PruebasConfiguracion(unittest.TestCase):
             with self.subTest(fuente=fuente), self.assertRaises(ErrorConfiguracion):
                 extraer_exclusiones(fuente)
 
-    def test_ref_git_rechaza_opciones_y_rutas(self):
-        with patch("scripts.migrar_exclusiones.subprocess.run") as ejecutar:
-            for referencia in ("--help", "HEAD", "abc123", "abc1234:otro", "../archivo"):
-                with self.subTest(referencia=referencia), self.assertRaises(ErrorConfiguracion):
-                    leer_version_git(referencia)
-            ejecutar.assert_not_called()
+    def test_configuracion_rechaza_marcador_saneado(self):
+        with self.assertRaisesRegex(ErrorConfiguracion, "marcador saneado"):
+            validar_exclusiones({"identificadores_excluidos": ["IDENTIFICADOR_PRIVADO_RETIRADO"]})
 
-    def test_git_lee_solo_main_del_commit_local(self):
-        fuente = 'identificadores_excluidos = ["DEMO-A"]'
-        with patch("scripts.migrar_exclusiones.subprocess.run", return_value=subprocess.CompletedProcess([], 0, fuente)) as ejecutar:
-            self.assertEqual(leer_version_git("abcdef1", Path(self.temporal.name)), fuente)
-        self.assertEqual(ejecutar.call_args.args[0], ["git", "show", "abcdef1:main.py"])
-        self.assertTrue(ejecutar.call_args.kwargs["capture_output"])
+    def test_migracion_rechaza_marcador_saneado(self):
+        with self.assertRaisesRegex(ErrorConfiguracion, "marcador saneado"):
+            extraer_exclusiones('identificadores_excluidos = ["IDENTIFICADOR_PRIVADO_RETIRADO"]')
 
-    def test_error_git_no_filtra_stderr(self):
-        fallo = subprocess.CalledProcessError(1, "git", stderr="DEMO-PRIVADO")
-        with patch("scripts.migrar_exclusiones.subprocess.run", side_effect=fallo):
-            with self.assertRaises(ErrorConfiguracion) as error:
-                leer_version_git("abcdef1")
-        self.assertNotIn("DEMO-PRIVADO", str(error.exception))
+    def test_cli_no_permite_recuperar_historial_por_ref(self):
+        import sys
+        resultado = subprocess.run(
+            [sys.executable, str(RAIZ / "scripts/migrar_exclusiones.py"), "--ref", "abcdef1"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(resultado.returncode, 2)
+        self.assertNotIn("Configuración privada creada", resultado.stdout)
 
     def test_migracion_y_carga_no_imprimen_identificadores(self):
         salida, errores = io.StringIO(), io.StringIO()
@@ -153,7 +148,9 @@ class PruebasConfiguracion(unittest.TestCase):
         anterior = serie.isin(["DEMO-A"])
         nuevo = serie.isin(cargar_identificadores_excluidos(self.ruta))
         self.assertTrue(anterior.equals(nuevo))
-        self.assertEqual(serie[~nuevo].tolist(), ["DEMO-B", "demo-a", None])
+        resultado = serie[~nuevo].tolist()
+        self.assertEqual(resultado[:2], ["DEMO-B", "demo-a"])
+        self.assertTrue(pd.isna(resultado[2]))
 
     def test_carga_antes_de_leer_excel_y_sin_lista_literal(self):
         codigo = (RAIZ / "main.py").read_text(encoding="utf-8")

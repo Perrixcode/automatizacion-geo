@@ -20,6 +20,8 @@ def validar_exclusiones(documento):
         raise ErrorConfiguracion("identificadores_excluidos debe ser una lista de textos.")
     if any(not isinstance(valor, str) or not valor or valor != valor.strip() for valor in valores):
         raise ErrorConfiguracion("Cada exclusión debe ser un texto no vacío y sin espacios exteriores.")
+    if "IDENTIFICADOR_PRIVADO_RETIRADO" in valores:
+        raise ErrorConfiguracion("La configuración contiene un marcador saneado; usa la configuración privada original.")
     if len(set(valores)) != len(valores):
         raise ErrorConfiguracion("La lista de exclusiones contiene duplicados.")
     # No normalizar: la comparación de pandas conserva la igualdad exacta anterior.

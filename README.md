@@ -68,27 +68,25 @@ El archivo debe contener un objeto con una única clave, `identificadores_exclui
 
 Si el archivo falta, es inválido o contiene valores duplicados, el programa se detiene. **No se supone una lista vacía**, porque eso podría volver a incluir registros que deben quedar fuera. Una lista vacía explícita es válida solo si se ha revisado que no corresponde excluir a nadie.
 
-### Conservar las exclusiones de una instalación anterior
+### Conservar una configuración privada existente
 
-En un clon local que conserve el historial anterior, ejecuta una vez:
+Si ya tienes `private/identificadores_excluidos.json`, consérvalo al cambiar de clon. No lo sobrescribas con la plantilla vacía y no lo añadas a Git. El programa mantiene los valores exactos del archivo privado.
 
-```sh
-python3 scripts/migrar_exclusiones.py --ref 23729b9fc6f4d7d97ab228048e61a835d97414c8
-```
-
-El script lee `main.py` de ese commit mediante `git show`, extrae únicamente la lista literal con AST y la guarda en el archivo privado. No ejecuta el programa anterior, no consulta la red, no muestra identificadores y no cambia el historial. Rechaza sobrescribir una configuración ya existente.
-
-Si modificaste las exclusiones localmente después de ese commit, utiliza una copia de tu `main.py` anterior en lugar de la referencia histórica:
+Si todavía necesitas extraer la lista desde una copia privada anterior de `main.py`, puedes ejecutar una vez:
 
 ```sh
 python3 scripts/migrar_exclusiones.py --origen /ruta/local/main-anterior.py
 ```
+
+El script lee esa copia con AST, sin ejecutarla ni mostrar identificadores, y crea el JSON privado sin sobrescribir archivos existentes. No admite recuperar versiones por SHA: el historial saneado contiene un marcador, no una configuración operativa. Tanto la carga como el migrador rechazan ese marcador.
 
 El archivo nuevo se crea con permisos de lectura y escritura para su propietario en sistemas POSIX. Comprueba que queda ignorado por Git:
 
 ```sh
 git check-ignore private/identificadores_excluidos.json
 ```
+
+No mezcles ni publiques ramas del historial anterior. Tras una limpieza histórica, utiliza un clon nuevo y restaura únicamente la configuración privada y los datos operacionales que correspondan.
 
 ### Instalación nueva
 
@@ -111,7 +109,7 @@ Estas verificaciones son acotadas. No acreditan la exactitud de cálculos labora
 - La carpeta `private/` está excluida de Git y no forma parte de la distribución pública.
 - El código actual no incorpora la lista personal de exclusiones anterior.
 - `.gitignore` no protege un archivo ya versionado, un `git add -f`, capturas, logs ni copias externas.
-- Esta corrección no reescribe el historial. Las versiones y diffs anteriores pueden seguir conteniendo información retirada del código actual; cualquier revisión o limpieza histórica debe tratarse por separado.
+- El saneamiento histórico reemplaza el identificador por un marcador en las versiones alcanzables. No elimina copias externas, respaldos privados ni garantiza la purga de objetos o vistas conservados por GitHub. Esa limpieza residual requiere una revisión separada con GitHub Support.
 
 ## Autor
 
