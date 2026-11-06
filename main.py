@@ -1,6 +1,7 @@
 import pandas as pd #Llamo al directorio pandas y lo abrevio como pd
 import openpyxl # Llamo al directorio openpyxl
 import datetime 
+from configuracion import ErrorConfiguracion, cargar_identificadores_excluidos
 
 #FUNCIONES
 
@@ -101,6 +102,11 @@ print(
 """
 
 #INICIO ESTRICTO DEL PROGRAMA 
+
+try:
+    identificadores_excluidos = cargar_identificadores_excluidos()
+except ErrorConfiguracion as error:
+    raise SystemExit(str(error)) from None
 
 print("AUTOMATIZACIÓN GEO")
 
@@ -448,9 +454,7 @@ rut_geo_invalido = ~(geovictoria["Identificador"].isin(ruta_maestro["rut"]))
 rut_geo_invalido.reset_index()
 #print(geovictoria[rut_geo_invalido]["Identificador"].value_counts()) Para mirar dentro de la mascara rut_geo... columnas que existen en geovictoria
 
-identificadores_excluidos = [
-    "IDENTIFICADOR_PRIVADO_RETIRADO"
-]
+# Las exclusiones se cargaron desde la configuración privada al iniciar.
 
 es_id_excluido = geovictoria["Identificador"].isin(identificadores_excluidos)
 #print(es_id_excluido.sum())
@@ -1461,3 +1465,4 @@ print(
 
 
 """
+

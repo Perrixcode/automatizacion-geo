@@ -1,302 +1,120 @@
 # Automatización GEO
 
-Sistema en desarrollo para automatizar el procesamiento de asistencia laboral a partir de registros exportados desde GeoVictoria, cronogramas de trabajo y reglas operacionales.
+Prototipo en desarrollo con **Python, pandas y openpyxl** para procesar asistencia desde archivos Excel de GeoVictoria, un maestro de trabajadores y un cronograma mensual.
 
-El proyecto nace de un proceso real que actualmente requiere varias horas de trabajo manual cada mes para limpiar datos, revisar marcaciones, calcular jornadas y preparar información para su posterior procesamiento en Zenda.
+El proyecto nace de un proceso operacional que requiere limpiar datos, revisar marcaciones y preparar información para Zenda. La estimación inicial del proceso manual fue de 3 a 4 horas por período; **no es una medición de ahorro conseguida por este programa**.
 
-> 🚧 Proyecto actualmente en desarrollo.
+## Estado del proyecto
 
-## 🎯 Objetivo
+El código ya contiene lectura y cruce de las tres fuentes, validaciones, cálculo de programación semanal, clasificación parcial de incidencias y análisis de colaciones. Es un prototipo de consola: esas piezas no acreditan un flujo mensual completo ni un cálculo laboral validado para uso definitivo.
 
-Automatizar el flujo de procesamiento de asistencia, reduciendo tareas manuales y aumentando la trazabilidad de los cálculos.
+La exportación final para Zenda, la cobertura integral de reglas y una demostración reproducible del flujo completo con datos ficticios siguen pendientes. No hay conexión API con GeoVictoria o Zenda ni envío automático de información.
 
-El sistema busca transformar:
+## Qué está implementado en el código
 
-GeoVictoria + Cronograma + Reglas de negocio
+- Lectura del maestro y cronograma; detección de duplicados, campos faltantes, estados y jornadas inconsistentes.
+- Cruce del cronograma con el maestro, cálculo de horas netas programadas y agrupación semanal.
+- Lectura del Excel de GeoVictoria y relación con el maestro mediante identificadores.
+- Cruce de programación y marcaciones por trabajador y fecha.
+- Clasificación parcial de marcaciones incompletas y algunos patrones de ajuste, conservando columnas originales y ajustadas por separado.
+- Clasificación de ciertos casos como pendientes de revisión, sin resolver todos los patrones posibles.
+- Cálculo de duración bruta de jornadas y colaciones, estadísticas descriptivas y posibles valores atípicos mediante IQR.
+- Exclusiones configuradas en un archivo privado local, sin identificadores personales incorporados en el código actual.
 
-en:
+La detección de una inconsistencia no significa que todas las rutas del programa bloqueen automáticamente los cálculos posteriores. Las reglas de ajuste son parte del prototipo y requieren revisión operativa; no sustituyen una validación laboral ni autorizan pagos o descuentos.
 
-- horas trabajadas;
-- horas programadas;
-- incidencias de marcación;
-- horas extraordinarias;
-- horas de descuento;
-- horas trabajadas en feriados;
-- ausencias;
-- licencias;
-- vacaciones;
-- resumen mensual por trabajador;
-- información preparada para su posterior carga en Zenda.
+## Qué falta completar y validar
 
-## 🧩 Problema que resuelve
+- Fixtures ficticios para ejecutar el procesamiento completo sin archivos privados.
+- Pruebas automatizadas de las reglas de negocio y de sus casos límite.
+- Resolución integral de incidencias y tratamiento de jornadas especiales.
+- Cálculo final validado de horas trabajadas, extraordinarias, descuentos, feriados, ausencias, licencias y vacaciones.
+- Resumen mensual y exportación final compatible con el proceso de Zenda.
+- Modularización del script principal e interfaz de ejecución más clara.
 
-Actualmente el proceso requiere:
+El archivo `prueba_colacion.py` contiene ejemplos exploratorios impresos en consola, no una suite de pruebas con aserciones. Las pruebas agregadas en `tests/` cubren la configuración privada y su migración; **no validan todavía el motor completo de asistencia**.
 
-1. Descargar un archivo Excel desde GeoVictoria.
-2. Eliminar columnas que no son necesarias.
-3. Revisar manualmente marcaciones incompletas o desplazadas.
-4. Comparar las marcaciones con el cronograma de cada trabajador.
-5. Calcular horas diarias y semanales.
-6. Identificar diferencias respecto de la jornada correspondiente.
-7. Separar horas extra y descuentos.
-8. Procesar manualmente feriados, ausencias, permisos, licencias y vacaciones.
-9. Consolidar la información mensual para Zenda.
+## Fuentes y ejecución
 
-Este proceso puede requerir aproximadamente 3 a 4 horas de trabajo manual por período.
+El script espera estos archivos privados en `datos/`:
 
-## ⚙️ Tecnologías
+- `maestro_trabajadores.xlsx`: identificadores, tipo de jornada, referencia semanal, área, estado activo y reglas asociadas.
+- `cronograma_mensual.xlsx`: trabajador, fecha, estado y horarios programados.
+- `geovictoria.xlsx`: export de marcaciones con el formato que utiliza el script; se lee con `header=1`.
 
-- Python
-- pandas
-- openpyxl
-- datetime
-- Excel
-- Git
-- GitHub
+No se incluyen esos Excel en el repositorio. Instalar dependencias no proporciona una demo ejecutable del flujo completo.
 
-## 📥 Fuentes de datos
-
-Actualmente el proyecto utiliza tres fuentes principales.
-
-### Maestro de trabajadores
-
-Contiene información relativamente estable de cada trabajador:
-
-- identificador;
-- tipo de jornada;
-- horas de referencia semanal;
-- área;
-- estado activo;
-- derechos laborales que afectan el cálculo.
-
-### Cronograma mensual
-
-Representa la planificación real de trabajo:
-
-- fecha;
-- trabajador;
-- estado programado;
-- entrada programada;
-- salida programada;
-- colación programada;
-- observaciones.
-
-### GeoVictoria
-
-Se utiliza como fuente de marcaciones reales de asistencia.
-
-Del archivo original se utilizan principalmente:
-
-- identificador;
-- fecha;
-- hora de ingreso;
-- inicio de colación;
-- fin de colación;
-- hora de salida.
-
-GeoVictoria se utiliza actualmente únicamente como medio de registro de asistencia. La planificación de turnos, licencias, permisos y otras novedades se administra fuera de la plataforma.
-
-## ✅ Funcionalidades implementadas
-
-Actualmente el proyecto ya permite:
-
-- importar el maestro de trabajadores;
-- importar el cronograma mensual;
-- validar identificadores duplicados;
-- validar tipos de jornada;
-- detectar información obligatoria faltante;
-- validar coherencia de derechos asociados al trabajador;
-- detectar turnos duplicados;
-- validar estados de programación;
-- detectar días libres con horarios cargados;
-- detectar días de trabajo sin horarios;
-- validar colaciones programadas;
-- detectar trabajadores inexistentes en el maestro;
-- relacionar cronograma y maestro mediante `merge`;
-- detectar trabajadores inactivos programados;
-- validar coherencia entre entrada y salida;
-- calcular horas netas programadas;
-- agrupar jornadas por semana;
-- calcular días programados;
-- considerar horas computables asociadas a derechos laborales;
-- comparar la programación semanal con la referencia correspondiente;
-- detectar semanas con programación desajustada.
-
-## 🔍 Validación de datos
-
-El proyecto utiliza validaciones antes de realizar los cálculos.
-
-Ejemplos:
-
-- un trabajador no puede aparecer dos veces el mismo día;
-- un día marcado como libre no debe contener horario;
-- un día de trabajo debe contener entrada y salida;
-- un trabajador inactivo no debe tener turnos programados;
-- las colaciones programadas deben utilizar valores permitidos;
-- todos los identificadores del cronograma deben existir en el maestro;
-- los trabajadores full-time deben cumplir su referencia semanal considerando las reglas aplicables.
-
-El objetivo es detectar inconsistencias antes de que los datos incorrectos lleguen al cálculo final.
-
-## 🧮 Procesamiento semanal
-
-Las horas programadas se calculan a partir de:
-
-```text
-hora salida
--
-hora entrada
--
-colación programada
-=
-horas netas programadas
-```
-
-Posteriormente las jornadas son agrupadas por trabajador y semana.
-
-```text
-horas diarias
-        ↓
-agrupación semanal
-        ↓
-horas programadas
-        ↓
-reglas computables
-        ↓
-comparación con referencia semanal
-```
-
-Esto permite detectar automáticamente diferencias en la programación.
-
-## 🚨 Incidencias
-
-Una parte importante del proyecto será diferenciar entre:
-
-- datos válidos;
-- ajustes automáticos;
-- situaciones que requieren revisión humana.
-
-Estados considerados:
-
-```text
-OK
-AJUSTADO AUTOMÁTICAMENTE
-REQUIERE REVISIÓN
-```
-
-El programa no pretende inventar información cuando una marcación es ambigua.
-
-Cuando no sea posible determinar correctamente lo ocurrido, el caso será enviado a revisión antes de generar el cálculo definitivo.
-
-## 🗺️ Flujo objetivo
-
-```text
-Maestro trabajadores
-        +
-Cronograma mensual
-        +
-GeoVictoria
-        ↓
-Validación de datos
-        ↓
-Cruce de información
-        ↓
-Detección de incidencias
-        ↓
-Revisión / resolución
-        ↓
-Cálculo diario
-        ↓
-Cálculo semanal
-        ↓
-Horas extra / descuentos
-        ↓
-Feriados / ausencias / licencias / vacaciones
-        ↓
-Resumen mensual
-        ↓
-Excel preparado para procesamiento en Zenda
-```
-
-## 🚧 Roadmap
-
-### MVP
-
-- [x] Maestro de trabajadores
-- [x] Cronograma mensual
-- [x] Validaciones básicas
-- [x] Cálculo de horas programadas
-- [x] Agrupación semanal
-- [x] Validación de programación semanal
-- [ ] Integración del procesamiento de GeoVictoria
-- [ ] Cruce entre horas programadas y marcaciones reales
-- [ ] Motor de incidencias
-- [ ] Cálculo de horas reales
-- [ ] Feriados
-- [ ] Ausencias
-- [ ] Licencias y vacaciones
-- [ ] Horas extraordinarias
-- [ ] Horas de descuento
-- [ ] Resumen mensual
-- [ ] Exportación final a Excel
-
-### Futuras mejoras
-
-- Integración mediante API con GeoVictoria.
-- Evaluar integración con Zenda.
-- Generación automática del cronograma base.
-- Dashboard de resultados.
-- Interfaz gráfica.
-- Pruebas automatizadas.
-- Mayor modularización del proyecto.
-
-## 🔐 Privacidad
-
-El proyecto fue desarrollado utilizando información operacional real.
-
-Por motivos de privacidad:
-
-- los archivos Excel reales no forman parte del repositorio;
-- los datos personales de trabajadores están excluidos mediante `.gitignore`;
-- los archivos generados por el sistema tampoco se versionan.
-
-Para una versión pública del proyecto se utilizarán posteriormente datos ficticios de ejemplo.
-
-## 📦 Instalación
-
-Clonar el repositorio:
-
-```bash
+```sh
 git clone https://github.com/Perrixcode/automatizacion-geo.git
 cd automatizacion-geo
-```
-
-Crear un entorno virtual:
-
-```bash
-python -m venv .venv
-```
-
-Activarlo en macOS/Linux:
-
-```bash
+python3 -m venv .venv
 source .venv/bin/activate
+python3 -m pip install -r requirements.txt
 ```
 
-Instalar dependencias:
+Antes de ejecutar, configura las exclusiones según la sección siguiente y revisa los formatos de entrada. Desde la raíz del proyecto:
 
-```bash
-pip install -r requirements.txt
+```sh
+python3 main.py
 ```
 
-## 📌 Estado del proyecto
+El resultado actual se inspecciona en consola. No se genera todavía el archivo mensual final para Zenda. La salida puede mostrar información de los Excel privados: no publiques capturas ni logs de una ejecución con datos reales.
 
-El proyecto se encuentra actualmente en desarrollo activo.
+## Configuración privada de exclusiones
 
-La prioridad actual es completar el motor de cálculo y validación utilizando archivos Excel. Una vez alcanzado el MVP, se evaluará reemplazar la importación manual desde GeoVictoria por una integración mediante API.
+`main.py` carga `private/identificadores_excluidos.json` antes de leer los Excel. La ruta se resuelve respecto del proyecto, no del directorio desde el que se invoca Python.
 
-## 👨‍💻 Autor
+El archivo debe contener un objeto con una única clave, `identificadores_excluidos`, cuyo valor sea una lista de textos. Se conserva la comparación exacta anterior de pandas: no se cambian mayúsculas, puntuación ni formato de los identificadores.
+
+Si el archivo falta, es inválido o contiene valores duplicados, el programa se detiene. **No se supone una lista vacía**, porque eso podría volver a incluir registros que deben quedar fuera. Una lista vacía explícita es válida solo si se ha revisado que no corresponde excluir a nadie.
+
+### Conservar las exclusiones de una instalación anterior
+
+En un clon local que conserve el historial anterior, ejecuta una vez:
+
+```sh
+python3 scripts/migrar_exclusiones.py --ref 23729b9fc6f4d7d97ab228048e61a835d97414c8
+```
+
+El script lee `main.py` de ese commit mediante `git show`, extrae únicamente la lista literal con AST y la guarda en el archivo privado. No ejecuta el programa anterior, no consulta la red, no muestra identificadores y no cambia el historial. Rechaza sobrescribir una configuración ya existente.
+
+Si modificaste las exclusiones localmente después de ese commit, utiliza una copia de tu `main.py` anterior en lugar de la referencia histórica:
+
+```sh
+python3 scripts/migrar_exclusiones.py --origen /ruta/local/main-anterior.py
+```
+
+El archivo nuevo se crea con permisos de lectura y escritura para su propietario en sistemas POSIX. Comprueba que queda ignorado por Git:
+
+```sh
+git check-ignore private/identificadores_excluidos.json
+```
+
+### Instalación nueva
+
+La plantilla `config/identificadores_excluidos.example.json` contiene una lista vacía y ningún dato personal. Úsala únicamente tras decidir explícitamente las exclusiones que corresponden. Crea `private/identificadores_excluidos.json` localmente y no incorpores sus valores al código, a pruebas ni a commits.
+
+## Pruebas de configuración
+
+```sh
+python3 -m unittest discover -s tests -v
+python3 -m compileall -q main.py configuracion.py scripts tests
+```
+
+Las pruebas usan identificadores ficticios. Cubren carga, validación, errores sin revelar contenido, migración sin ejecutar código, conservación de valores y protección frente a sobrescritura. Si pandas está instalado, comprueban también que la exclusión conserva la igualdad exacta del filtro anterior.
+
+Estas verificaciones son acotadas. No acreditan la exactitud de cálculos laborales ni una ejecución completa con los Excel operacionales.
+
+## Privacidad y límites
+
+- Los Excel operacionales y salidas Excel están excluidos mediante `.gitignore`.
+- La carpeta `private/` está excluida de Git y no forma parte de la distribución pública.
+- El código actual no incorpora la lista personal de exclusiones anterior.
+- `.gitignore` no protege un archivo ya versionado, un `git add -f`, capturas, logs ni copias externas.
+- Esta corrección no reescribe el historial. Las versiones y diffs anteriores pueden seguir conteniendo información retirada del código actual; cualquier revisión o limpieza histórica debe tratarse por separado.
+
+## Autor
 
 **Esteban Iturra Camaño**
 
-Proyecto desarrollado como parte de mi formación en Python, análisis de datos y automatización de procesos, aplicando programación a un problema operacional real.
+Proyecto de formación en Python, análisis de datos y automatización de procesos, aplicado a un problema operacional real.
